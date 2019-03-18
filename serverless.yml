@@ -1,0 +1,138 @@
+service: mindbody-scraper-auth
+provider:
+  name: aws
+  profile: banjo
+  runtime: nodejs8.10
+  stage: ${opt:stage, 'dev'}
+  region: us-west-2
+  environment:
+    region: ${self:provider.region}
+    stage: ${self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - ec2:*
+        - lambda:*
+        - sqs:*
+      Resource:
+        - "*"
+  vpc:
+    securityGroupIds:
+      - Ref: SecurityGroup
+    subnetIds:
+      - Ref: PrivateSubnet
+
+functions:
+  getTest:
+    handler: functions/getTest.handler
+  mbFetch:
+    handler: functions/mbFetch.handler
+    timeout: 30
+    reservedConcurrency: 8
+  getToken:
+    handler: functions/getToken.handler
+    timeout: 30
+    reservedConcurrency: 2
+resources:
+  Resources:
+    VPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: 10.0.0.0/16
+        EnableDnsSupport: true
+        EnableDnsHostnames: true
+        InstanceTenancy: default
+    InternetGateway:
+      Type: AWS::EC2::InternetGateway
+    VPCGatewayAttachment:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+          VpcId:
+            Ref: VPC
+          InternetGatewayId:
+            Ref: InternetGateway
+    PublicSubnetA:
+      Type: AWS::EC2::Subnet
+      Properties:
+        AvailabilityZone: us-west-2a
+        VpcId:
+          Ref: VPC
+        CidrBlock: 10.0.1.0/24
+        MapPublicIpOnLaunch: true
+    RouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: VPC
+    InternetRoute:
+      Type: AWS::EC2::Route
+      DependsOn: VPCGatewayAttachment
+      Properties:
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:
+          Ref: InternetGateway
+        RouteTableId:
+          Ref: RouteTable
+    PublicSubnetARouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: RouteTable
+        SubnetId:
+          Ref: PublicSubnetA
+    PrivateSubnet:
+      Type: AWS::EC2::Subnet
+      Properties:
+        AvailabilityZone: us-west-2a
+        VpcId:
+          Ref: VPC
+        CidrBlock: 10.0.4.0/24
+        MapPublicIpOnLaunch: false
+    PrivateRouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: VPC
+    EIP:
+      Type: AWS::EC2::EIP
+      Properties:
+        Domain: vpc
+    NATGateway:
+      Type: AWS::EC2::NatGateway
+      Properties:
+        AllocationId:
+          Fn::GetAtt: [ EIP, AllocationId ]
+        SubnetId:
+          Ref: PublicSubnetA
+    NatRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: PrivateRouteTable
+        DestinationCidrBlock: 0.0.0.0/0
+        NatGatewayId:
+          Ref: NATGateway
+    PrivateSubnetRouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: PrivateRouteTable
+        SubnetId:
+          Ref: PrivateSubnet
+    SecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: "mindbody scraper auth SG"
+        GroupDescription: "Mind body scraper auth security group"
+        VpcId:
+          Ref: VPC
+    SecurityGroupIngress:
+      Type: AWS::EC2::SecurityGroupIngress
+      Properties:
+        GroupId:
+          Ref: SecurityGroup
+        IpProtocol: tcp
+        FromPort: 0
+        ToPort: 65535
+        SourceSecurityGroupId:
+          Ref: SecurityGroup

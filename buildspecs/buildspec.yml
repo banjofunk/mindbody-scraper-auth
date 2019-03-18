@@ -1,0 +1,10 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - npm install -g serverless
+      - npm install
+  build:
+    commands:
+      - serverless deploy --region us-west-2

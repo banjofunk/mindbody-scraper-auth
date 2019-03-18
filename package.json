@@ -1,0 +1,15 @@
+{
+  "name": "mindbody-scraper-auth",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:banjofunk/mindbody-scraper-auth.git",
+  "author": "banjofunk <joshsfunkybanjo@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.422.0",
+    "cheerio": "^1.0.0-rc.2",
+    "form-data": "^2.3.3",
+    "node-fetch": "^2.3.0",
+    "set-cookie-parser": "^2.3.5"
+  }
+}
