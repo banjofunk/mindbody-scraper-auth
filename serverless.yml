@@ -1,7 +1,6 @@
 service: mindbody-scraper-auth
 provider:
   name: aws
-  profile: banjo
   runtime: nodejs8.10
   stage: ${opt:stage, 'dev'}
   region: us-west-2
