@@ -40,7 +40,7 @@ const fetchWithToken = async (input, init, token) => {
 
 const getToken = async (getNew=false) => {
   params = {
-    FunctionName: `mindbody-scraper-${process.env.stage}-getToken`,
+    FunctionName: `mindbody-scraper-auth-${process.env.stage}-getToken`,
     Payload: JSON.stringify({ getNew, version })
   }
   return await lambda.invoke(params).promise()
